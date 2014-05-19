@@ -6,16 +6,16 @@ module ImageSvd
     # The entry point for the application logic
     # rubocop:disable MethodLength
     def run(opts)
-      if opts[:read]
+      if opts[:read] == true
         app = ImageSvd::ImageMatrix.new_from_svd_savefile(opts[:input_file])
         app.to_image(opts[:output_name])
       else
         app = ImageSvd::ImageMatrix.new(opts[:num_singular_values])
         app.read_image(opts[:input_file])
-        if opts[:convert] == true
-          app.to_image(opts[:output_name])
-        elsif opts[:archive]
+        if opts[:archive] == true
           app.save_svd(opts[:output_name])
+        elsif opts[:convert] == true
+          app.to_image(opts[:output_name])
         end
       end
     end
@@ -40,6 +40,7 @@ module ImageSvd
         EOS
         opt :input_file,
             'An input file (Preferably a jpg).',
+            default: 'input.jpg',
             short: '-i'
         opt :num_singular_values,
             'The number of singular values to keep for an image. Lower'\
@@ -48,7 +49,9 @@ module ImageSvd
             default: 20,
             short: '-n'
         opt :output_name,
-            'A name for an output file (Extension may be ignored).',
+            'A path/name for an output file (Extension will be ignored).'\
+              'If no path/name is provided, a file will be written in'\
+              'the current directory',
             default: 'svd_image_output',
             short: '-o'
         opt :convert,
