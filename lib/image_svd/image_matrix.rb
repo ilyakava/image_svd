@@ -18,11 +18,17 @@ module ImageSvd
     end
 
     def read_image(image_path)
-      %x(convert #{image_path} #{image_path}.pgm)
-      image = PNM.read("#{image_path}.pgm")
+      intermediate = extension_swap(image_path.path, 'pgm')
+      %x(convert #{image_path.path} #{intermediate})
+      image = PNM.read intermediate
       decompose Matrix[*image.pixels]
-      %x(rm #{image_path}.pgm)
+      %x(rm #{intermediate})
       self
+    end
+
+    # @todo abstract this to another class
+    def extension_swap(path, new_ext, suffix = '')
+      path.gsub(/\..{1,5}$/, "#{suffix}.#{new_ext}")
     end
 
     # The most time consuming method
@@ -57,10 +63,12 @@ module ImageSvd
     end
 
     def to_image(path)
+      out_path = extension_swap(path, 'jpg')
+      intermediate = extension_swap(path, 'pgm', '_tmp_outfile')
       cleansed_matrix = matrix_to_valid_pixels(reconstruct_matrix)
-      PNM::Image.new(cleansed_matrix).write("#{path}_tmp_outfile.pgm")
-      %x(convert #{path}_tmp_outfile.pgm #{path}.jpg)
-      %x(rm #{path}_tmp_outfile.pgm)
+      PNM::Image.new(cleansed_matrix).write(intermediate)
+      %x(convert #{intermediate} #{out_path})
+      %x(rm #{intermediate})
       true
     end
 
@@ -83,13 +91,14 @@ module ImageSvd
     # rubocop:enable MethodLength
 
     def save_svd(path)
+      out_path = extension_swap(path, 'svdim')
       string = {
         'sigma_vTs' => @sigma_vTs.map(&:to_a),
         'us' => @us.map(&:to_a),
         'm' => @m,
         'n' => @n
       }.to_json
-      File.open("#{path}.svdim", 'w') do |f|
+      File.open(out_path, 'w') do |f|
         f.puts string
       end
     end

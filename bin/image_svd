@@ -20,10 +20,6 @@ if RUBY_VERSION >= '1.9.2'
 
   time = Benchmark.realtime do
     opts = Trollop.options(&ImageSvd::Options.get)
-    if opts[:input_file] == ''
-      puts 'Must provide an input file!'
-      exit(-1)
-    end
     cli.run(opts)
   end
 

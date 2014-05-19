@@ -40,18 +40,18 @@ module ImageSvd
         EOS
         opt :input_file,
             'An input file (Preferably a jpg).',
-            default: 'input.jpg',
-            short: '-i'
+            type: :io,
+            required: true
         opt :num_singular_values,
             'The number of singular values to keep for an image. Lower'\
-              'numbers mean lossier compression; smaller files and more'\
-              'distorted images.',
-            default: 20,
+              ' numbers mean lossier compression; smaller files and more'\
+              ' distorted images.',
+            default: 50,
             short: '-n'
         opt :output_name,
             'A path/name for an output file (Extension will be ignored).'\
-              'If no path/name is provided, a file will be written in'\
-              'the current directory',
+              ' If no path/name is provided, a file will be written in'\
+              ' the current directory',
             default: 'svd_image_output',
             short: '-o'
         opt :convert,
@@ -63,7 +63,8 @@ module ImageSvd
             default: false,
             short: '-a'
         opt :read,
-            'Read an Image Svd archive and output the image it contains.',
+            'Read an Image Svd archive (*.svdim) and output the image'\
+              ' it contains.',
             default: false,
             short: '-r'
       end
