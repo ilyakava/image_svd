@@ -1,5 +1,5 @@
-require "image_svd/version"
+# encoding: utf-8
 
-module ImageSvd
-  # Your code goes here...
-end
+require 'image_svd/version'
+require 'image_svd/cli'
+require 'image_svd/image_matrix'

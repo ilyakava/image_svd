@@ -1,0 +1,35 @@
+#!/usr/bin/env ruby
+# encoding: utf-8
+
+if RUBY_VERSION >= '1.9.2'
+  $LOAD_PATH.unshift(File.dirname(File.realpath(__FILE__)) + '/../lib')
+
+  # test for presence of imagemagick dependency
+  imagemagick_location = `which convert`
+  if imagemagick_location == ''
+    puts 'Image Svd requires the cmd line utility imagemagick.\
+      Install it with: brew install imagemagick'
+    exit(-1)
+  end
+
+  require 'image_svd'
+  require 'benchmark'
+  require 'trollop'
+
+  cli = ImageSvd::CLI.new
+
+  time = Benchmark.realtime do
+    opts = Trollop.options(&ImageSvd::Options.get)
+    unless opt[:input_file] || opt[:read]
+      puts 'Must provide an input file!'
+      exit(-1)
+    end
+    cli.run(opts)
+  end
+
+  puts "Image svd finished in #{time} seconds"
+  exit(0)
+else
+  puts 'Image svd only supports Ruby versions 1.9.2 and above'
+  exit(-1)
+end
