@@ -27,8 +27,10 @@ module ImageSvd
     end
 
     # @todo abstract this to another class
+    # always place the new extension, even if there is nothing to swap out
     def extension_swap(path, new_ext, suffix = '')
-      path.gsub(/\..{1,5}$/, "#{suffix}.#{new_ext}")
+      head = path.gsub(/\..{1,5}$/, '')
+      "#{head}#{suffix}.#{new_ext}"
     end
 
     # The most time consuming method

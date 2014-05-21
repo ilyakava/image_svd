@@ -1,15 +1,13 @@
 # encoding: utf-8
 
 require 'spec_helper'
-require 'fakefs/safe'
 
 describe 'CLI' do
   describe 'integration spec' do
     let(:cli) { ImageSvd::CLI.new }
-    let(:orig) { './spec/fixtures/2x2.jpg' }
+    let(:orig) { File.new('./spec/fixtures/2x2.jpg') }
 
     it 'converts an image without too great errors' do
-      orig = './spec/fixtures/2x2.jpg'
       conv = './spec/fixtures/svd_image_output'
       cli.run(
         input_file: orig,
@@ -20,7 +18,7 @@ describe 'CLI' do
       i = ImageSvd::ImageMatrix.new(2)
       i.read_image(orig)
       i2 = ImageSvd::ImageMatrix.new(2)
-      i2.read_image("#{conv}.jpg")
+      i2.read_image(File.new("#{conv}.jpg"))
       diff_matrix = i.reconstruct_matrix - i2.reconstruct_matrix
       diff_matrix.to_a.flatten.each do |diff_component|
         diff_component.abs.should be < 5
@@ -48,7 +46,7 @@ describe 'CLI' do
       i = ImageSvd::ImageMatrix.new(2)
       i.read_image(orig)
       i2 = ImageSvd::ImageMatrix.new(2)
-      i2.read_image("#{conv}_2.jpg")
+      i2.read_image(File.new("#{conv}_2.jpg"))
       diff_matrix = i.reconstruct_matrix - i2.reconstruct_matrix
       diff_matrix.to_a.flatten.each do |diff_component|
         diff_component.abs.should be < 5
