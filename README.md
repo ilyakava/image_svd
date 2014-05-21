@@ -1,6 +1,6 @@
 # ImageSvd
 
-TODO: Write a gem description
+[About page](http://ilyakava.tumblr.com/post/86408872127/gerhard-richter-svd-and-me).
 
 ## Installation
 
@@ -18,7 +18,14 @@ Or install it yourself as:
 
 ## Usage
 
-TODO: Write usage instructions here
+`image_svd --help`
+
+A prerequisite is to have [imagemagick](http://www.imagemagick.org/), and a ruby version 1.9.2 or greater installed.
+
+`image_svd -i ~/Downloads/svd_photos/in_RichterfuneralM.jpg -n 10`
+will create a new image in the current directory using 10 singular values.
+
+Be warned! Compression is by no means quick! A 200x300 image takes 15 seconds on my computer. Finding the eigenvalues of a matrix is no easy computational task (O(n!) by brute force, O(n<sup>2.3</sup>) by super fancy approximation).
 
 ## Contributing
 
