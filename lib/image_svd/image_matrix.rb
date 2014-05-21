@@ -18,6 +18,7 @@ module ImageSvd
     end
 
     def read_image(image_path)
+      puts 'Reading image and converting to matrix...'
       intermediate = extension_swap(image_path.path, 'pgm')
       %x(convert #{image_path.path} #{intermediate})
       image = PNM.read intermediate
@@ -39,14 +40,17 @@ module ImageSvd
     # rubocop:disable MethodLength
     def decompose(m_A)
       m_AT = m_A.transpose
+      @m, @n = m_A.to_a.length, m_A.to_a.first.length
       m_ATA = m_AT * m_A
+      # linear regression from several images over 200px wide
+      eta = (0 < (t = (0.0003541 * (@m * @n) - 10.541)) ? t : 0)
+      puts "Searching for eigenvalues... Estimated Time: #{eta.floor} seconds"
       dcmp = Matrix::EigenvalueDecomposition.new(m_ATA)
       evs = dcmp.eigenvalues
       # eigenvectors are already normalized and in same order as eigenvalues
       sorted_eigenvectors = dcmp.eigenvectors.each_with_index
         .sort_by { |_v, i| -evs[i] }
         .map { |v, _idx| v }
-      @m, @n = m_A.to_a.length, m_A.to_a.first.length
       both = (0...@num_singular_values).map do |idx|
         u = sorted_eigenvectors[idx]
         sigma_vT = (m_A * u).covector
