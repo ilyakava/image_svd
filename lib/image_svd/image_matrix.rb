@@ -10,11 +10,13 @@ module ImageSvd
   class ImageMatrix
     # rubocop:disable SymbolName
     # rubocop:disable VariableName
-    attr_reader :num_singular_values
+    attr_reader :singular_values
     attr_accessor :sigma_vTs, :us, :m, :n
 
-    def initialize(num_singular_values)
-      @num_singular_values = num_singular_values
+    def initialize(singular_values)
+      fail 'not enough singular values' if singular_values.length.zero?
+      @singular_values = singular_values
+      @num_singular_values = singular_values.max
     end
 
     def read_image(image_path)
@@ -61,20 +63,24 @@ module ImageSvd
     end
     # rubocop:enable MethodLength
 
-    def reconstruct_matrix
+    def reconstruct_matrix(num_singular_values = nil)
+      num_singular_values ||= @num_singular_values
       zero_matrix = Matrix[*Array.new(@n) { Array.new(@m) { 0 } }]
-      (0...@num_singular_values).reduce(zero_matrix) do |acc, idx|
+      (0...num_singular_values).reduce(zero_matrix) do |acc, idx|
         acc + (@us[idx] * @sigma_vTs[idx])
       end.transpose
     end
 
     def to_image(path)
-      out_path = extension_swap(path, 'jpg')
-      intermediate = extension_swap(path, 'pgm', '_tmp_outfile')
-      cleansed_matrix = matrix_to_valid_pixels(reconstruct_matrix)
-      PNM::Image.new(cleansed_matrix).write(intermediate)
-      %x(convert #{intermediate} #{out_path})
-      %x(rm #{intermediate})
+      puts 'writing images...' if @singular_values.length > 1
+      @singular_values.each do |sv|
+        out_path = extension_swap(path, 'jpg', "_#{sv}_svs")
+        intermediate = extension_swap(path, 'pgm', '_tmp_outfile')
+        cleansed_matrix = matrix_to_valid_pixels(reconstruct_matrix(sv))
+        PNM::Image.new(cleansed_matrix).write(intermediate)
+        %x(convert #{intermediate} #{out_path})
+        %x(rm #{intermediate})
+      end
       true
     end
 
@@ -111,9 +117,11 @@ module ImageSvd
 
     # @todo error handling code here
     # @todo serialization is kind of silly as is
-    def self.new_from_svd_savefile(path)
-      h = JSON.parse(File.open(path, &:readline))
-      instance = new(h['sigma_vTs'].length)
+    def self.new_from_svd_savefile(opts)
+      h = JSON.parse(File.open(opts[:input_file], &:readline))
+      svals = [opts[:singular_values], h['sigma_vTs'].size].compact.sort.uniq
+      valid_svals = svals.reject { |v| v > h['sigma_vTs'].size }
+      instance = new(valid_svals)
       instance.sigma_vTs = h['sigma_vTs']
         .map { |arr| Vector[*arr.flatten].covector }
       instance.us = h['us'].map { |arr| Vector[*arr.flatten] }

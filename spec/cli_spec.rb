@@ -15,17 +15,17 @@ describe 'CLI' do
         num_singular_values: 2,
         output_name: conv
       )
-      i = ImageSvd::ImageMatrix.new(2)
+      i = ImageSvd::ImageMatrix.new([2])
       i.read_image(orig)
-      i2 = ImageSvd::ImageMatrix.new(2)
-      i2.read_image(File.new("#{conv}.jpg"))
+      i2 = ImageSvd::ImageMatrix.new([2])
+      i2.read_image(File.new("#{conv}_2_svs.jpg"))
       diff_matrix = i.reconstruct_matrix - i2.reconstruct_matrix
       diff_matrix.to_a.flatten.each do |diff_component|
         diff_component.abs.should be < 5
       end
 
       # cleanup
-      %x(rm #{conv}.jpg)
+      %x(rm #{conv}_2_svs.jpg)
     end
 
     it 'archives, reads, and converts an image without too great errors' do
@@ -34,25 +34,25 @@ describe 'CLI' do
       cli.run(
         input_file: orig,
         archive: true,
-        num_singular_values: 2,
+        num_singular_values: '2',
         output_name: conv
       )
       # read archive and write and image
       cli.run(
         input_file: "#{conv}.svdim",
         read: true,
-        output_name: "#{conv}_2"
+        output_name: "#{conv}_two"
       )
-      i = ImageSvd::ImageMatrix.new(2)
+      i = ImageSvd::ImageMatrix.new([2])
       i.read_image(orig)
-      i2 = ImageSvd::ImageMatrix.new(2)
-      i2.read_image(File.new("#{conv}_2.jpg"))
+      i2 = ImageSvd::ImageMatrix.new([2])
+      i2.read_image(File.new("#{conv}_two_2_svs.jpg"))
       diff_matrix = i.reconstruct_matrix - i2.reconstruct_matrix
       diff_matrix.to_a.flatten.each do |diff_component|
         diff_component.abs.should be < 5
       end
       # cleanup
-      %x(rm #{conv}_2.jpg #{conv}.svdim)
+      %x(rm #{conv}_two_2_svs.jpg #{conv}.svdim)
     end
   end
 end

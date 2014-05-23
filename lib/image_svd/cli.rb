@@ -7,10 +7,11 @@ module ImageSvd
     # rubocop:disable MethodLength
     def run(opts)
       if opts[:read] == true
-        app = ImageSvd::ImageMatrix.new_from_svd_savefile(opts[:input_file])
+        app = ImageSvd::ImageMatrix.new_from_svd_savefile(opts)
         app.to_image(opts[:output_name])
       else
-        app = ImageSvd::ImageMatrix.new(opts[:num_singular_values])
+        opts = process_options(opts)
+        app = ImageSvd::ImageMatrix.new(opts[:singular_values])
         app.read_image(opts[:input_file])
         if opts[:archive] == true
           app.save_svd(opts[:output_name])
@@ -18,6 +19,14 @@ module ImageSvd
           app.to_image(opts[:output_name])
         end
       end
+    end
+
+    def process_options(opts)
+      i, valid_i = [opts[:num_singular_values].to_s, /^\d+\.\.\d+$|^\d+$/]
+      fail 'invalid --num-singular-values option' unless i.match valid_i
+      vs = i.split('..').map(&:to_i)
+      vs = (vs.length == 1 ? vs : ((vs.first)..(vs.last)).to_a)
+      opts.merge(singular_values: vs)
     end
   end
   # rubocop:enable MethodLength
@@ -45,8 +54,9 @@ module ImageSvd
         opt :num_singular_values,
             'The number of singular values to keep for an image. Lower'\
               ' numbers mean lossier compression; smaller files and more'\
-              ' distorted images.',
-            default: 50,
+              ' distorted images. You may also provide a range ruby style,'\
+              ' (ex: 1..9) in which case many images will be output.',
+            default: '50',
             short: '-n'
         opt :output_name,
             'A path/name for an output file (Extension will be ignored).'\
