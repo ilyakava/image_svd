@@ -1,3 +1,4 @@
+[![Stories in Ready](https://badge.waffle.io/ilyakava/image_svd.png?label=ready&title=Ready)](https://waffle.io/ilyakava/image_svd)
 # image_svd
 
 A utility to compress images, with interesting [Richter](https://artsy.net/artist/gerhard-richter)-esque blur effects at high compression.
