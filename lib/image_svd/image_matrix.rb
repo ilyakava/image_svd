@@ -76,16 +76,16 @@ module ImageSvd
 
     def get_image_channels(image_path)
       puts 'Reading image and converting to matrix...'
-      intermediate = extension_swap(image_path.path, 'pgm')
+      extension = @grayscale ? 'pgm' : 'ppm'
+      intermediate = extension_swap(image_path.path, extension)
       %x(convert #{image_path.path} #{intermediate})
       if @grayscale
-        channels = [Matrix[*PNM.read(intermediate).pixels]]
+        channels = [PNM.read(intermediate).pixels]
       else
-        fail 'Only grayscale images are supported!'
-        # channels = ppm_to_rgb(PPM.read(intermediate))
+        channels = ImageMatrix.ppm_to_rgb(PNM.read(intermediate).pixels)
       end
       %x(rm #{intermediate})
-      channels
+      channels.map { |c| Matrix[*c] }
     end
 
     def read_image(image_path)
@@ -98,7 +98,7 @@ module ImageSvd
       if @grayscale
         to_grayscale_image(path)
       else
-        fail 'Only grayscale images are supported!'
+        to_color_image(path)
       end
     end
 
@@ -115,6 +115,20 @@ module ImageSvd
       end
     end
 
+    def to_color_image(path)
+      puts 'writing images...' if @singular_values.length > 1
+      @singular_values.each do |sv|
+        out_path = extension_swap(path, 'jpg', "_#{sv}_svs")
+        intermediate = extension_swap(path, 'ppm', '_tmp_outfile')
+        ms = @channels.map { |c| c.reconstruct_matrix(sv) }
+        cleansed_mtrxs = ms.map { |m| ImageMatrix.matrix_to_valid_pixels(m) }
+        ppm_matrix = ImageMatrix.rgb_to_ppm(*cleansed_mtrxs)
+        PNM::Image.new(ppm_matrix).write(intermediate)
+        %x(convert #{intermediate} #{out_path})
+        %x(rm #{intermediate})
+      end
+    end
+
     def save_svd(path)
       out_path = extension_swap(path, 'svdim')
       string = @channels.map do |c| {
@@ -125,6 +139,22 @@ module ImageSvd
       end.to_json
       File.open(out_path, 'w') do |f|
         f.puts string
+      end
+    end
+
+    # breaks a ppm image into 3 separate channels
+    def self.ppm_to_rgb(arr)
+      (0..2).to_a.map do |i|
+        arr.map { |row| row.map { |pix| pix[i] } }
+      end
+    end
+
+    # combines 3 separate channels into the ppm scheme
+    def self.rgb_to_ppm(r, g, b)
+      r.each_with_index.map do |row, row_i|
+        row.each_with_index.map do |_, pix_i|
+          [r[row_i][pix_i], g[row_i][pix_i], b[row_i][pix_i]]
+        end
       end
     end
 
@@ -158,6 +188,23 @@ module ImageSvd
       chan.m = h['m']
       instance
     end
+
+    def self.new_saved_color_svd(opts, hs)
+      svals = [opts[:singular_values], hs.first['sigma_vTs'].size]
+      valid_svals = ImageSvd::Options.num_sing_val_out_from_archive(*svals)
+      instance = new(valid_svals, false)
+      3.times do |i|
+        h = hs[i]
+        chan = Channel.new(Matrix[], valid_svals)
+        chan.sigma_vTs = h['sigma_vTs']
+          .map { |arr| Vector[*arr.flatten].covector }
+        chan.us = h['us'].map { |arr| Vector[*arr.flatten] }
+        chan.n = h['n']
+        chan.m = h['m']
+        instance.channels << chan
+      end
+      instance
+    end
     # rubocop:enable MethodLength
 
     # @todo error handling code here
@@ -167,7 +214,7 @@ module ImageSvd
       if h.length == 1 # grayscale
         new_saved_grayscale_svd(opts, h.first)
       else
-        fail 'Only grayscale images are supported!'
+        new_saved_color_svd(opts, h)
       end
     end
   end

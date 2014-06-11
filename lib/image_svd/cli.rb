@@ -30,10 +30,10 @@ module ImageSvd
       proc do
         version "Image Svd #{ImageSvd::VERSION} (c) 2014 Ilya Kavalerov"
         banner <<-EOS
-          Image Svd is a utilty that performs Singular Value Decomposition
-          on a grayscale image. It can be useful for compressing images, or
-          creating interesting visual effects to distort images when
-          compression is set very high.
+          Image Svd is a utilty for compressing images, or creating
+          interesting visual effects to distort images when compression is
+          set very high. Image Svd performs Singular Value Decomposition
+          on any image, grayscale or color.
 
           Usage:
                  image_svd [options]
@@ -43,6 +43,10 @@ module ImageSvd
             'An input file (Preferably a jpg).',
             type: :io,
             required: true
+        opt :grayscale,
+            'Do not preserve the colors in the input image.',
+            default: true,
+            short: '-g'
         opt :num_singular_values,
             'The number of singular values to keep for an image. Lower'\
               ' numbers mean lossier compression; smaller files and more'\
@@ -69,10 +73,6 @@ module ImageSvd
               ' it contains.',
             default: false,
             short: '-r'
-        opt :grayscale,
-            'Do not preserve the colors in the input image.',
-            default: true,
-            short: '-g'
       end
     end
     # rubocop:enable MethodLength
