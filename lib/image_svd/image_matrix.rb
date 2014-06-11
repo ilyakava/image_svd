@@ -55,6 +55,27 @@ module ImageSvd
         acc + (@us[idx] * @sigma_vTs[idx])
       end.transpose
     end
+
+    # returns all the information necessary to serialize this channel
+    def to_h
+      {
+        'sigma_vTs' => @sigma_vTs.map(&:to_a),
+        'us' => @us.map(&:to_a),
+        'm' => @m,
+        'n' => @n
+      }
+    end
+
+    # can initialize with the result of #to_h
+    def self.apply_h(hash, num_singular_values)
+      c = new(Matrix[], num_singular_values)
+      c.sigma_vTs = hash['sigma_vTs']
+        .map { |arr| Vector[*arr.flatten].covector }
+      c.us = hash['us'].map { |arr| Vector[*arr.flatten] }
+      c.m = hash['m']
+      c.n = hash['n']
+      c
+    end
   end
 
   # This class is responsible for:
@@ -131,12 +152,7 @@ module ImageSvd
 
     def save_svd(path)
       out_path = extension_swap(path, 'svdim')
-      string = @channels.map do |c| {
-        'sigma_vTs' => c.sigma_vTs.map(&:to_a),
-        'us' => c.us.map(&:to_a),
-        'm' => c.m,
-        'n' => c.n }
-      end.to_json
+      string = @channels.map(&:to_h).to_json
       File.open(out_path, 'w') do |f|
         f.puts string
       end
@@ -174,18 +190,13 @@ module ImageSvd
         end
       end
     end
+    # rubocop:enable MethodLength
 
     def self.new_saved_grayscale_svd(opts, h)
       svals = [opts[:singular_values], h['sigma_vTs'].size]
       valid_svals = ImageSvd::Options.num_sing_val_out_from_archive(*svals)
       instance = new(valid_svals, true)
-      instance.channels << Channel.new(Matrix[], valid_svals)
-      chan = instance.channels.first
-      chan.sigma_vTs = h['sigma_vTs']
-        .map { |arr| Vector[*arr.flatten].covector }
-      chan.us = h['us'].map { |arr| Vector[*arr.flatten] }
-      chan.n = h['n']
-      chan.m = h['m']
+      instance.channels << Channel.apply_h(h, valid_svals)
       instance
     end
 
@@ -194,18 +205,11 @@ module ImageSvd
       valid_svals = ImageSvd::Options.num_sing_val_out_from_archive(*svals)
       instance = new(valid_svals, false)
       3.times do |i|
-        h = hs[i]
-        chan = Channel.new(Matrix[], valid_svals)
-        chan.sigma_vTs = h['sigma_vTs']
-          .map { |arr| Vector[*arr.flatten].covector }
-        chan.us = h['us'].map { |arr| Vector[*arr.flatten] }
-        chan.n = h['n']
-        chan.m = h['m']
+        chan = Channel.apply_h(hs[i], valid_svals)
         instance.channels << chan
       end
       instance
     end
-    # rubocop:enable MethodLength
 
     # @todo error handling code here
     # @todo serialization is kind of silly as is
