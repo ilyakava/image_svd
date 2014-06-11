@@ -41,7 +41,8 @@ describe 'CLI' do
       cli.run(
         input_file: "#{conv}.svdim",
         read: true,
-        output_name: "#{conv}_two"
+        output_name: "#{conv}_two",
+        num_singular_values: '2'
       )
       i = ImageSvd::ImageMatrix.new([2])
       i.read_image(orig)

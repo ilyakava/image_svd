@@ -6,11 +6,11 @@ module ImageSvd
     # The entry point for the application logic
     # rubocop:disable MethodLength
     def run(opts)
+      opts = process_options(opts)
       if opts[:read] == true
         app = ImageSvd::ImageMatrix.new_from_svd_savefile(opts)
         app.to_image(opts[:output_name])
       else
-        opts = process_options(opts)
         app = ImageSvd::ImageMatrix.new(opts[:singular_values])
         app.read_image(opts[:input_file])
         if opts[:archive] == true
@@ -80,5 +80,12 @@ module ImageSvd
       end
     end
     # rubocop:enable MethodLength
+
+    # this method chooses which number of singular values are valid to output
+    # to an image file from an archive file provided. @returns Array[Int]
+    def self.numSingValsToOutputFromArchive(requests, available)
+      valid_svals = requests.reject { |v| v > available }
+      valid_svals.empty? ? [available] : valid_svals
+    end
   end
 end

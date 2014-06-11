@@ -119,8 +119,8 @@ module ImageSvd
     # @todo serialization is kind of silly as is
     def self.new_from_svd_savefile(opts)
       h = JSON.parse(File.open(opts[:input_file], &:readline))
-      svals = [opts[:singular_values], h['sigma_vTs'].size].compact.sort.uniq
-      valid_svals = svals.reject { |v| v > h['sigma_vTs'].size }
+      svals = [opts[:singular_values], h['sigma_vTs'].size]
+      valid_svals = ImageSvd::Options.numSingValsToOutputFromArchive(*svals)
       instance = new(valid_svals)
       instance.sigma_vTs = h['sigma_vTs']
         .map { |arr| Vector[*arr.flatten].covector }
