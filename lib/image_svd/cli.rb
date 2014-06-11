@@ -6,7 +6,7 @@ module ImageSvd
     # The entry point for the application logic
     # rubocop:disable MethodLength
     def run(opts)
-      opts = process_options(opts)
+      opts = Options.process(opts)
       if opts[:read] == true
         app = ImageSvd::ImageMatrix.new_from_svd_savefile(opts)
         app.to_image(opts[:output_name])
@@ -19,14 +19,6 @@ module ImageSvd
           app.to_image(opts[:output_name])
         end
       end
-    end
-
-    def process_options(opts)
-      i, valid_i = [opts[:num_singular_values].to_s, /^\d+\.\.\d+$|^\d+$/]
-      fail 'invalid --num-singular-values option' unless i.match valid_i
-      vs = i.split('..').map(&:to_i)
-      vs = (vs.length == 1 ? vs : ((vs.first)..(vs.last)).to_a)
-      opts.merge(singular_values: vs)
     end
   end
   # rubocop:enable MethodLength
@@ -86,6 +78,19 @@ module ImageSvd
     def self.numSingValsToOutputFromArchive(requests, available)
       valid_svals = requests.reject { |v| v > available }
       valid_svals.empty? ? [available] : valid_svals
+    end
+
+    def self.process(opts)
+      vs = format_num_sing_vals(opts[:num_singular_values].to_s)
+      opts.merge(singular_values: vs)
+    end
+
+    # reformats the string cmd line option to an array
+    def self.format_num_sing_vals(str)
+      i, valid_i_regex = [str, /^\d+\.\.\d+$|^\d+$/]
+      fail 'invalid --num-singular-values option' unless i.match valid_i_regex
+      vs = i.split('..').map(&:to_i)
+      vs = (vs.length == 1 ? vs : ((vs.first)..(vs.last)).to_a)
     end
   end
 end
