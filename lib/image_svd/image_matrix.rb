@@ -7,7 +7,7 @@ module ImageSvd
   # rubocop:disable VariableName
 
   # This class is responsible for manipulating matricies that correspond
-  # to the color channels in images, this includes performing Singular
+  # to the color channels in images, which includes performing Singular
   # Value Decomposition on a matrix
   class Channel
     attr_accessor :sigma_vTs, :us, :m, :n
@@ -57,10 +57,12 @@ module ImageSvd
     end
   end
 
-  # This class is responsible for almost everything :(
+  # This class is responsible for:
   # Reading an image or archive to a matrix
   # Saving a matrix to an image
   class ImageMatrix
+    include ImageSvd::Util
+
     attr_reader :singular_values, :grayscale
     attr_accessor :channels
 
@@ -90,13 +92,6 @@ module ImageSvd
       channels = get_image_channels(image_path)
       @channels = channels.map { |m| Channel.new(m, @num_singular_values) }
       @channels.each(&:decompose)
-    end
-
-    # @todo abstract this to another class
-    # always place the new extension, even if there is nothing to swap out
-    def extension_swap(path, new_ext, suffix = '')
-      head = path.gsub(/\..{1,5}$/, '')
-      "#{head}#{suffix}.#{new_ext}"
     end
 
     def to_image(path)
