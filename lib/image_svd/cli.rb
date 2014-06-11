@@ -75,7 +75,7 @@ module ImageSvd
 
     # this method chooses which number of singular values are valid to output
     # to an image file from an archive file provided. @returns Array[Int]
-    def self.numSingValsToOutputFromArchive(requests, available)
+    def self.num_sing_val_out_from_archive(requests, available)
       valid_svals = requests.reject { |v| v > available }
       valid_svals.empty? ? [available] : valid_svals
     end
@@ -90,7 +90,7 @@ module ImageSvd
       i, valid_i_regex = [str, /^\d+\.\.\d+$|^\d+$/]
       fail 'invalid --num-singular-values option' unless i.match valid_i_regex
       vs = i.split('..').map(&:to_i)
-      vs = (vs.length == 1 ? vs : ((vs.first)..(vs.last)).to_a)
+      vs.length == 1 ? vs : ((vs.first)..(vs.last)).to_a
     end
   end
 end

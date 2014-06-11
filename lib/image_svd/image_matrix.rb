@@ -120,7 +120,7 @@ module ImageSvd
     def self.new_from_svd_savefile(opts)
       h = JSON.parse(File.open(opts[:input_file], &:readline))
       svals = [opts[:singular_values], h['sigma_vTs'].size]
-      valid_svals = ImageSvd::Options.numSingValsToOutputFromArchive(*svals)
+      valid_svals = ImageSvd::Options.num_sing_val_out_from_archive(*svals)
       instance = new(valid_svals)
       instance.sigma_vTs = h['sigma_vTs']
         .map { |arr| Vector[*arr.flatten].covector }
