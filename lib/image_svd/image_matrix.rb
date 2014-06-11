@@ -3,44 +3,28 @@ require 'json'
 require 'pnm'
 
 module ImageSvd
-  # This class is responsible for almost everything :(
-  # Reading an image or archive to a matrix
-  # Saving a matrix to an image
-  # Performing Singular Value Decomposition on a matrix
-  class ImageMatrix
-    # rubocop:disable SymbolName
-    # rubocop:disable VariableName
-    attr_reader :singular_values
+  # rubocop:disable SymbolName
+  # rubocop:disable VariableName
+
+  # This class is responsible for manipulating matricies that correspond
+  # to the color channels in images, this includes performing Singular
+  # Value Decomposition on a matrix
+  class Channel
     attr_accessor :sigma_vTs, :us, :m, :n
+    attr_reader :num_singular_values
 
-    def initialize(singular_values)
-      fail 'not enough singular values' if singular_values.length.zero?
-      @singular_values = singular_values
-      @num_singular_values = singular_values.max
-    end
-
-    def read_image(image_path)
-      puts 'Reading image and converting to matrix...'
-      intermediate = extension_swap(image_path.path, 'pgm')
-      %x(convert #{image_path.path} #{intermediate})
-      image = PNM.read intermediate
-      decompose Matrix[*image.pixels]
-      %x(rm #{intermediate})
-      self
-    end
-
-    # @todo abstract this to another class
-    # always place the new extension, even if there is nothing to swap out
-    def extension_swap(path, new_ext, suffix = '')
-      head = path.gsub(/\..{1,5}$/, '')
-      "#{head}#{suffix}.#{new_ext}"
+    def initialize(matrix, num_singular_values)
+      fail 'Channel initialized without a matrix' unless matrix.is_a? Matrix
+      @matrix = matrix
+      @num_singular_values = num_singular_values
     end
 
     # The most time consuming method
     # Launches the decomposition and saves the two lists
     # of vectors needed to reconstruct the image
     # rubocop:disable MethodLength
-    def decompose(m_A)
+    def decompose(m_A = nil)
+      m_A ||= @matrix
       m_AT = m_A.transpose
       @m, @n = m_A.to_a.length, m_A.to_a.first.length
       m_ATA = m_AT * m_A
@@ -60,6 +44,7 @@ module ImageSvd
       end
       @sigma_vTs = both.map { |p| p.last }
       @us = both.map { |p| p.first }
+      self
     end
     # rubocop:enable MethodLength
 
@@ -70,23 +55,87 @@ module ImageSvd
         acc + (@us[idx] * @sigma_vTs[idx])
       end.transpose
     end
+  end
+
+  # This class is responsible for almost everything :(
+  # Reading an image or archive to a matrix
+  # Saving a matrix to an image
+  class ImageMatrix
+    attr_reader :singular_values, :grayscale
+    attr_accessor :channels
+
+    def initialize(singular_values, grayscale)
+      fail 'not enough singular values' if singular_values.length.zero?
+      @singular_values = singular_values
+      @num_singular_values = singular_values.max
+      @grayscale = grayscale
+      @channels = []
+    end
+
+    def get_image_channels(image_path)
+      puts 'Reading image and converting to matrix...'
+      intermediate = extension_swap(image_path.path, 'pgm')
+      %x(convert #{image_path.path} #{intermediate})
+      if @grayscale
+        channels = [Matrix[*PNM.read(intermediate).pixels]]
+      else
+        fail 'Only grayscale images are supported!'
+        # channels = ppm_to_rgb(PPM.read(intermediate))
+      end
+      %x(rm #{intermediate})
+      channels
+    end
+
+    def read_image(image_path)
+      channels = get_image_channels(image_path)
+      @channels = channels.map { |m| Channel.new(m, @num_singular_values) }
+      @channels.each(&:decompose)
+    end
+
+    # @todo abstract this to another class
+    # always place the new extension, even if there is nothing to swap out
+    def extension_swap(path, new_ext, suffix = '')
+      head = path.gsub(/\..{1,5}$/, '')
+      "#{head}#{suffix}.#{new_ext}"
+    end
 
     def to_image(path)
+      if @grayscale
+        to_grayscale_image(path)
+      else
+        fail 'Only grayscale images are supported!'
+      end
+    end
+
+    def to_grayscale_image(path)
       puts 'writing images...' if @singular_values.length > 1
       @singular_values.each do |sv|
         out_path = extension_swap(path, 'jpg', "_#{sv}_svs")
         intermediate = extension_swap(path, 'pgm', '_tmp_outfile')
-        cleansed_matrix = matrix_to_valid_pixels(reconstruct_matrix(sv))
-        PNM::Image.new(cleansed_matrix).write(intermediate)
+        reconstructed_mtrx = @channels.first.reconstruct_matrix(sv)
+        cleansed_mtrx = ImageMatrix.matrix_to_valid_pixels(reconstructed_mtrx)
+        PNM::Image.new(cleansed_mtrx).write(intermediate)
         %x(convert #{intermediate} #{out_path})
         %x(rm #{intermediate})
       end
-      true
+    end
+
+    def save_svd(path)
+      out_path = extension_swap(path, 'svdim')
+      string = @channels.map do |c| {
+        'sigma_vTs' => c.sigma_vTs.map(&:to_a),
+        'us' => c.us.map(&:to_a),
+        'm' => c.m,
+        'n' => c.n }
+      end.to_json
+      File.open(out_path, 'w') do |f|
+        f.puts string
+      end
     end
 
     # conforms a matrix to pnm requirements for pixels: positive integers
     # rubocop:disable MethodLength
-    def matrix_to_valid_pixels(matrix)
+    def self.matrix_to_valid_pixels(matrix)
       matrix.to_a.map do |row|
         row.map do |number|
           rounded = number.round
@@ -100,36 +149,33 @@ module ImageSvd
         end
       end
     end
-    # rubocop:enable MethodLength
 
-    def save_svd(path)
-      out_path = extension_swap(path, 'svdim')
-      string = {
-        'sigma_vTs' => @sigma_vTs.map(&:to_a),
-        'us' => @us.map(&:to_a),
-        'm' => @m,
-        'n' => @n
-      }.to_json
-      File.open(out_path, 'w') do |f|
-        f.puts string
-      end
+    def self.new_saved_grayscale_svd(opts, h)
+      svals = [opts[:singular_values], h['sigma_vTs'].size]
+      valid_svals = ImageSvd::Options.num_sing_val_out_from_archive(*svals)
+      instance = new(valid_svals, true)
+      instance.channels << Channel.new(Matrix[], valid_svals)
+      chan = instance.channels.first
+      chan.sigma_vTs = h['sigma_vTs']
+        .map { |arr| Vector[*arr.flatten].covector }
+      chan.us = h['us'].map { |arr| Vector[*arr.flatten] }
+      chan.n = h['n']
+      chan.m = h['m']
+      instance
     end
+    # rubocop:enable MethodLength
 
     # @todo error handling code here
     # @todo serialization is kind of silly as is
     def self.new_from_svd_savefile(opts)
       h = JSON.parse(File.open(opts[:input_file], &:readline))
-      svals = [opts[:singular_values], h['sigma_vTs'].size]
-      valid_svals = ImageSvd::Options.num_sing_val_out_from_archive(*svals)
-      instance = new(valid_svals)
-      instance.sigma_vTs = h['sigma_vTs']
-        .map { |arr| Vector[*arr.flatten].covector }
-      instance.us = h['us'].map { |arr| Vector[*arr.flatten] }
-      instance.n = h['n']
-      instance.m = h['m']
-      instance
+      if h.length == 1 # grayscale
+        new_saved_grayscale_svd(opts, h.first)
+      else
+        fail 'Only grayscale images are supported!'
+      end
     end
-    # rubocop:enable SymbolName
-    # rubocop:enable VariableName
   end
+  # rubocop:enable SymbolName
+  # rubocop:enable VariableName
 end

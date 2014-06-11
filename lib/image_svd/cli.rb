@@ -5,18 +5,18 @@ module ImageSvd
   class CLI
     # The entry point for the application logic
     # rubocop:disable MethodLength
-    def run(opts)
-      opts = Options.process(opts)
-      if opts[:read] == true
-        app = ImageSvd::ImageMatrix.new_from_svd_savefile(opts)
-        app.to_image(opts[:output_name])
+    def run(options)
+      o = Options.process(options)
+      if o[:read] == true
+        app = ImageSvd::ImageMatrix.new_from_svd_savefile(o)
+        app.to_image(o[:output_name])
       else
-        app = ImageSvd::ImageMatrix.new(opts[:singular_values])
-        app.read_image(opts[:input_file])
-        if opts[:archive] == true
-          app.save_svd(opts[:output_name])
-        elsif opts[:convert] == true
-          app.to_image(opts[:output_name])
+        app = ImageSvd::ImageMatrix.new(o[:singular_values], o[:grayscale])
+        app.read_image(o[:input_file])
+        if o[:archive] == true
+          app.save_svd(o[:output_name])
+        elsif o[:convert] == true
+          app.to_image(o[:output_name])
         end
       end
     end
@@ -69,6 +69,10 @@ module ImageSvd
               ' it contains.',
             default: false,
             short: '-r'
+        opt :grayscale,
+            'Do not preserve the colors in the input image.',
+            default: true,
+            short: '-g'
       end
     end
     # rubocop:enable MethodLength
