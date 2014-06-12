@@ -96,7 +96,6 @@ module ImageSvd
     end
 
     def get_image_channels(image_path)
-      puts 'Reading image and converting to matrix...'
       extension = @grayscale ? 'pgm' : 'ppm'
       intermediate = extension_swap(image_path.path, extension)
       %x(convert #{image_path.path} #{intermediate})

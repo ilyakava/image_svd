@@ -4,20 +4,29 @@ module ImageSvd
   # This class is responsible for handling the command line interface
   class CLI
     # The entry point for the application logic
-    # rubocop:disable MethodLength
     def run(options)
       Options.iterate_on_input(options) do |o|
-        if o[:read] == true
-          app = ImageSvd::ImageMatrix.new_from_svd_savefile(o)
-          app.to_image(o[:output_name])
+        if o[:directory]
+          fork { run_single_image(o) }
         else
-          app = ImageSvd::ImageMatrix.new(o[:singular_values], o[:grayscale])
-          app.read_image(o[:input_file])
-          if o[:archive] == true
-            app.save_svd(o[:output_name])
-          elsif o[:convert] == true
-            app.to_image(o[:output_name])
-          end
+          run_single_image(o)
+        end
+      end
+      Process.waitall
+    end
+
+    # rubocop:disable MethodLength
+    def run_single_image(o)
+      if o[:read] == true
+        app = ImageSvd::ImageMatrix.new_from_svd_savefile(o)
+        app.to_image(o[:output_name])
+      else
+        app = ImageSvd::ImageMatrix.new(o[:singular_values], o[:grayscale])
+        app.read_image(o[:input_file])
+        if o[:archive] == true
+          app.save_svd(o[:output_name])
+        elsif o[:convert] == true
+          app.to_image(o[:output_name])
         end
       end
     end
