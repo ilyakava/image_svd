@@ -6,17 +6,18 @@ module ImageSvd
     # The entry point for the application logic
     # rubocop:disable MethodLength
     def run(options)
-      o = Options.process(options)
-      if o[:read] == true
-        app = ImageSvd::ImageMatrix.new_from_svd_savefile(o)
-        app.to_image(o[:output_name])
-      else
-        app = ImageSvd::ImageMatrix.new(o[:singular_values], o[:grayscale])
-        app.read_image(o[:input_file])
-        if o[:archive] == true
-          app.save_svd(o[:output_name])
-        elsif o[:convert] == true
+      Options.iterate_on_input(options) do |o|
+        if o[:read] == true
+          app = ImageSvd::ImageMatrix.new_from_svd_savefile(o)
           app.to_image(o[:output_name])
+        else
+          app = ImageSvd::ImageMatrix.new(o[:singular_values], o[:grayscale])
+          app.read_image(o[:input_file])
+          if o[:archive] == true
+            app.save_svd(o[:output_name])
+          elsif o[:convert] == true
+            app.to_image(o[:output_name])
+          end
         end
       end
     end
@@ -25,6 +26,8 @@ module ImageSvd
 
   # This module holds custom behavior for dealing with the gem trollop
   module Options
+    extend Util
+
     # rubocop:disable MethodLength
     def self.get
       proc do
@@ -40,7 +43,9 @@ module ImageSvd
           where [options] are:
         EOS
         opt :input_file,
-            'An input file (Preferably a jpg).',
+            'An input file (Preferably a jpg). If you also specify'\
+            '--directory or -d, you may provide the path to a directory'\
+            '(which must end with a "/") instead of a file.',
             type: :io,
             required: true
         opt :grayscale,
@@ -60,6 +65,10 @@ module ImageSvd
               ' the current directory',
             default: 'svd_image_output',
             short: '-o'
+        opt :directory,
+            'The input provided is a directory instead of a file.',
+            default: false,
+            short: '-d'
         opt :convert,
             'Convert the input file now.',
             default: true,
@@ -95,6 +104,38 @@ module ImageSvd
       fail 'invalid --num-singular-values option' unless i.match valid_i_regex
       vs = i.split('..').map(&:to_i)
       vs.length == 1 ? vs : ((vs.first)..(vs.last)).to_a
+    end
+
+    # reformats directory inputs into an array of files, or repackages file
+    # inputs to be contained inside an array
+    def self.expand_input_files(opts)
+      if opts[:directory]
+        path = opts[:input_file].path
+        names = Dir.new(path).to_a
+        images = names.select { |name| name =~ Util::VALID_IMAGE_EXT_REGEX }
+        images.map { |name| File.new(path + name) }
+      else
+        [opts[:input_file]]
+      end
+    end
+
+    # ignore provided output_name in the case that a directory is input
+    def self.output_dir_path_for_input_file(dir)
+      path_components = dir.path.split('/')
+      filename = path_components.pop
+      (path_components << 'out' << filename).join('/')
+    end
+
+    def self.iterate_on_input(opts)
+      %x(mkdir #{opts[:input_file].path + 'out'}) if opts[:directory]
+      expand_input_files(opts).each do |file|
+        new_options = { input_file: file }
+        if opts[:directory]
+          new_options.merge!(output_name: output_dir_path_for_input_file(file))
+        end
+        o = process(opts).merge(new_options)
+        yield o
+      end
     end
   end
 end

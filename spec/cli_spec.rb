@@ -117,4 +117,24 @@ describe 'CLI' do
       %x(rm #{conv}_two_2_svs.jpg #{conv}.svdim)
     end
   end
+
+  describe 'expand_input_files' do
+    it 'packages a file input into an array container' do
+      file = File.new('./spec/fixtures/2x2.jpg')
+      opts = { input_file: file, directory: false }
+      formatted = ImageSvd::Options.expand_input_files(opts)
+      formatted.should eq([file])
+    end
+    it 'expands valid files in a directory into an array' do
+      # This spec will break if any more fixtures are added
+      in_dir = File.new('./spec/fixtures/') # the output of trollop
+      contents = [
+        './spec/fixtures/2x2.jpg',
+        './spec/fixtures/2x2_color.png'
+      ]
+      opts = { input_file: in_dir, directory: true }
+      formatted = ImageSvd::Options.expand_input_files(opts)
+      formatted.map(&:path).should eq(contents)
+    end
+  end
 end
