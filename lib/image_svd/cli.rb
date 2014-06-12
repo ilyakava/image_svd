@@ -42,6 +42,17 @@ module ImageSvd
       proc do
         version "Image Svd #{ImageSvd::VERSION} (c) 2014 Ilya Kavalerov"
         banner <<-EOS
+
+                  _____________   ____          ____   ______
+                  \\    ________\\  \\   \\        /   /  /  __  \\
+                   \\   \\           \\   \\      /   /  /  /  \\  \\
+                    \\   \\________   \\   \\    /   /  /  /    \\  \\
+                     \\_________   \\  \\   \\  /   /  /  /     /  /
+                               \\   \\  \\   \\/   /  /  /     /  /
+                       _________\\   \\  \\      /  /  /_____/  /
+                       \\_____________\\  \\____/  /___________/
+
+
           Image Svd is a utilty for compressing images, or creating
           interesting visual effects to distort images when compression is
           set very high. Image Svd performs Singular Value Decomposition
@@ -50,21 +61,24 @@ module ImageSvd
           Usage:
                  image_svd [options]
           where [options] are:
+ 
         EOS
         opt :input_file,
             'An input file (Preferably a jpg). If you also specify'\
-            '--directory or -d, you may provide the path to a directory'\
-            '(which must end with a "/") instead of a file.',
+              ' --directory or -d, you may provide the path to a directory'\
+              ' (which must end with a "/") instead of a file.',
             type: :io,
             required: true
         opt :grayscale,
-            'Do not preserve the colors in the input image.',
+            'Do not preserve the colors in the input image. Specify'\
+              ' --no-grayscale when you want an output image in color.'\
+              ' Expect processing time to increase 3-fold for color images.',
             default: true,
             short: '-g'
         opt :num_singular_values,
             'The number of singular values to keep for an image. Lower'\
-              ' numbers mean lossier compression; smaller files and more'\
-              ' distorted images. You may also provide a range ruby style,'\
+              ' numbers mean lossier compression, smaller files and more'\
+              ' distorted images. You may also provide a range ruby style'\
               ' (ex: 1..9) in which case many images will be output.',
             default: '50',
             short: '-n'
@@ -75,7 +89,10 @@ module ImageSvd
             default: 'svd_image_output',
             short: '-o'
         opt :directory,
-            'The input provided is a directory instead of a file.',
+            'The input provided is a directory instead of a file. In this'\
+              ' case every valid image inside the directory provided with'\
+              ' the option -i will be compressed, and placed into a folder'\
+              ' named "out" inside the directory specified.',
             default: false,
             short: '-d'
         opt :convert,
