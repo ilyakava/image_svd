@@ -138,7 +138,7 @@ module ImageSvd
       if opts[:directory]
         path = opts[:input_file].path
         names = Dir.new(path).to_a
-        images = names.select { |name| name =~ Util::VALID_IMAGE_EXT_REGEX }
+        images = names.select { |name| name =~ Util::VALID_INPUT_EXT_REGEX }
         images.map { |name| File.new(path + name) }
       else
         [opts[:input_file]]
