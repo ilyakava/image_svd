@@ -10,8 +10,7 @@ Gem::Specification.new do |spec|
   spec.email         = ['ilya@artsymail.com']
   spec.summary       = 'Compress images with Linear Algebra.'
   spec.description   = <<-EOF
-    Break down grayscale image matricies into their
-    singular value decomposition. Space saving, but CPU intensive.
+    Break down images into their singular value decomposition.
   EOF
   spec.homepage      = 'https://github.com/ilyakava/image_svd'
   spec.license       = 'MIT'
