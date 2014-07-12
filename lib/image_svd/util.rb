@@ -12,5 +12,14 @@ module ImageSvd
       head = path.gsub(/\..{1,5}$/, '')
       "#{head}#{suffix}.#{new_ext}"
     end
+
+    IMAGE_CREDIT = <<-EOS
+      2#0="&#0;&#2;"
+      2#120#Caption="Created with image_svd"
+      2#40#Special Instructions="http://www.rubygems.org/gems/image_svd"
+      2#80#Byline="http://www.ilyakavalerov.com"
+      2#110#Credit="Image manipulation by Ilya Kavalerov"
+      2#221="0:0:0:-00001"
+    EOS
   end
 end

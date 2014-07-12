@@ -26,7 +26,7 @@ describe 'CLI' do
       m2 = i2.channels.first.reconstruct_matrix
       diff_matrix = m - m2
       diff_matrix.to_a.flatten.each do |diff_component|
-        diff_component.abs.should be < 5
+        diff_component.abs.should be <= 5
       end
 
       # cleanup
@@ -54,7 +54,7 @@ describe 'CLI' do
       m2 = i2.channels.first.reconstruct_matrix
       diff_matrix = m - m2
       diff_matrix.to_a.flatten.each do |diff_component|
-        diff_component.abs.should be < 5
+        diff_component.abs.should be <= 5
       end
       # cleanup
       %x(rm #{conv}_two_2_svs.jpg #{conv}.svdim)
@@ -84,7 +84,7 @@ describe 'CLI' do
       m2 = i2.channels.map { |c| c.reconstruct_matrix }
       diff_matricies = (0..2).to_a.map { |idx| m[idx] - m2[idx] }
       diff_matricies.map(&:to_a).flatten.each do |diff_component|
-        diff_component.abs.should be < 5
+        diff_component.abs.should be <= 5
       end
       # cleanup
       %x(rm #{conv}_2_svs.jpg)
@@ -111,7 +111,7 @@ describe 'CLI' do
       m2 = i2.channels.map { |c| c.reconstruct_matrix }
       diff_matricies = (0..2).to_a.map { |idx| m[idx] - m2[idx] }
       diff_matricies.map(&:to_a).flatten.each do |diff_component|
-        diff_component.abs.should be < 5
+        diff_component.abs.should be <= 5
       end
       # cleanup
       %x(rm #{conv}_two_2_svs.jpg #{conv}.svdim)

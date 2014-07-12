@@ -131,6 +131,7 @@ module ImageSvd
         cleansed_mtrx = ImageMatrix.matrix_to_valid_pixels(reconstructed_mtrx)
         PNM::Image.new(cleansed_mtrx).write(intermediate)
         %x(convert #{intermediate} #{out_path})
+        add_image_svd_credit!(out_path)
         %x(rm #{intermediate})
       end
     end
@@ -145,8 +146,16 @@ module ImageSvd
         ppm_matrix = ImageMatrix.rgb_to_ppm(*cleansed_mtrxs)
         PNM::Image.new(ppm_matrix).write(intermediate)
         %x(convert #{intermediate} #{out_path})
+        add_image_svd_credit!(out_path)
         %x(rm #{intermediate})
       end
+    end
+
+    # more info: http://www.imagemagick.org/Usage/formats/#profile_iptc
+    def add_image_svd_credit!(path)
+      %x(echo '#{Util::IMAGE_CREDIT}' > iptcData.pro)
+      %x(convert #{path} +profile 8BIM -profile 8BIMTEXT:iptcData.pro #{path})
+      %x(rm iptcData.pro)
     end
 
     def save_svd(path)
