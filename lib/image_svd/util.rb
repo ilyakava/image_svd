@@ -15,7 +15,7 @@ module ImageSvd
 
     IMAGE_CREDIT = <<-EOS
       2#0="&#0;&#2;"
-      2#120#Caption="Created with image_svd"
+      2#120#Caption="Created with image_svd v #{ImageSvd::VERSION}"
       2#40#Special Instructions="http://www.rubygems.org/gems/image_svd"
       2#80#Byline="http://www.ilyakavalerov.com"
       2#110#Credit="Image manipulation by Ilya Kavalerov"
