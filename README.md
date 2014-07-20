@@ -1,3 +1,4 @@
+[![Gem Version](https://badge.fury.io/rb/image_svd.svg)](http://badge.fury.io/rb/image_svd)
 [![Stories in Ready](https://badge.waffle.io/ilyakava/image_svd.png?label=ready&title=Ready)](https://waffle.io/ilyakava/image_svd)
 
 # image_svd
