@@ -5,7 +5,14 @@ module ImageSvd
   class CLI
     # The entry point for the application logic
     def run(options)
-      Options.iterate_on_input(options) do |o|
+      pool = Options.collect_input(options)
+      until pool.empty?
+        async_batch(pool.slice!(0..(options[:thread_count] - 1)))
+      end
+    end
+
+    def async_batch(arr_options)
+      arr_options.each do |o|
         if o[:directory]
           fork { run_single_image(o) }
         else
@@ -108,6 +115,14 @@ module ImageSvd
               ' it contains.',
             default: false,
             short: '-r'
+        opt :thread_count,
+            'Advanced feature. The amount of separate threads to use when'\
+              ' processing images. Relevant when processing many images in'\
+              ' a directory. Should not exceed (n - 1) where n is the'\
+              ' logical core count on the end user\'s computer. Otherwise,'\
+              ' a higher number means less total time spent processing.',
+            default: 3,
+            short: '-t'
       end
     end
     # rubocop:enable MethodLength
@@ -121,7 +136,8 @@ module ImageSvd
 
     def self.process(opts)
       vs = format_num_sing_vals(opts[:num_singular_values].to_s)
-      opts.merge(singular_values: vs)
+      n = validate_thread_count(opts[:thread_count])
+      opts.merge(singular_values: vs, thread_count: n)
     end
 
     # reformats the string cmd line option to an array
@@ -130,6 +146,11 @@ module ImageSvd
       fail 'invalid --num-singular-values option' unless i.match valid_i_regex
       vs = i.split('..').map(&:to_i)
       vs.length == 1 ? vs : ((vs.first)..(vs.last)).to_a
+    end
+
+    # prevent non positive requested thread_counts
+    def self.validate_thread_count(n)
+      n > 1 ? n : 1
     end
 
     # reformats directory inputs into an array of files, or repackages file
@@ -152,16 +173,17 @@ module ImageSvd
       (path_components << 'out' << filename).join('/')
     end
 
-    def self.iterate_on_input(opts)
+    def self.collect_input(opts)
       %x(mkdir #{opts[:input_file].path + 'out'}) if opts[:directory]
+      collection = []
       expand_input_files(opts).each do |file|
         new_options = { input_file: file }
         if opts[:directory]
           new_options.merge!(output_name: output_dir_path_for_input_file(file))
         end
-        o = process(opts).merge(new_options)
-        yield o
+        collection << process(opts).merge(new_options)
       end
+      collection
     end
   end
 end

@@ -11,7 +11,8 @@ describe 'CLI' do
         input_file: orig,
         convert: true,
         num_singular_values: '2',
-        grayscale: true
+        grayscale: true,
+        thread_count: 3
       }
     end
 
@@ -69,7 +70,8 @@ describe 'CLI' do
         input_file: orig,
         convert: true,
         num_singular_values: '2',
-        grayscale: false
+        grayscale: false,
+        thread_count: 3
       }
     end
 
