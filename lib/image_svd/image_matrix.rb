@@ -153,9 +153,10 @@ module ImageSvd
 
     # more info: http://www.imagemagick.org/Usage/formats/#profile_iptc
     def add_image_svd_credit!(path)
-      %x(echo '#{Util::IMAGE_CREDIT}' > iptcData.pro)
-      %x(convert #{path} +profile 8BIM -profile 8BIMTEXT:iptcData.pro #{path})
-      %x(rm iptcData.pro)
+      r = rand(99999)
+      %x(echo '#{Util::IMAGE_CREDIT}' > iptcData#{r}.pro)
+      %x(convert #{path} +profile 8BIM -profile 8BIMTEXT:iptcData#{r}.pro #{path})
+      %x(rm iptcData#{r}.pro)
     end
 
     def save_svd(path)
